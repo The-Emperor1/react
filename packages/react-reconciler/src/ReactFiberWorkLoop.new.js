@@ -1568,6 +1568,7 @@ function renderRootSync(root: FiberRoot, lanes: Lanes) {
 /** @noinline */
 function workLoopSync() {
   // Already timed out, so perform work without checking if we need to yield.
+  // Sync 任务入口
   while (workInProgress !== null) {
     performUnitOfWork(workInProgress);
   }
@@ -1645,6 +1646,7 @@ function renderRootConcurrent(root: FiberRoot, lanes: Lanes) {
 /** @noinline */
 function workLoopConcurrent() {
   // Perform work until Scheduler asks us to yield
+  // Concurrent 任务入口
   while (workInProgress !== null && !shouldYield()) {
     performUnitOfWork(workInProgress);
   }
@@ -1660,6 +1662,7 @@ function performUnitOfWork(unitOfWork: Fiber): void {
   let next;
   if (enableProfilerTimer && (unitOfWork.mode & ProfileMode) !== NoMode) {
     startProfilerTimer(unitOfWork);
+    // beginWork, "递"阶段
     next = beginWork(current, unitOfWork, subtreeRenderLanes);
     stopProfilerTimerIfRunningAndRecordDelta(unitOfWork, true);
   } else {
@@ -1697,6 +1700,7 @@ function completeUnitOfWork(unitOfWork: Fiber): void {
         !enableProfilerTimer ||
         (completedWork.mode & ProfileMode) === NoMode
       ) {
+        // completeWork, "归"阶段
         next = completeWork(current, completedWork, subtreeRenderLanes);
       } else {
         startProfilerTimer(completedWork);
@@ -1782,7 +1786,9 @@ function commitRoot(root) {
 }
 
 function commitRootImpl(root, renderPriorityLevel) {
+  //------------------------------------------ before mutation前 -------------------------------------------
   do {
+    // 触发useEffect回调与其他同步任务。由于这些任务可能触发新的渲染，所以这里要一直遍历执行直到没有任务
     // `flushPassiveEffects` will call `flushSyncUpdateQueue` at the end, which
     // means `flushPassiveEffects` will sometimes result in additional
     // passive effects. So we need to keep flushing in a loop until there are
@@ -1798,7 +1804,10 @@ function commitRootImpl(root, renderPriorityLevel) {
     'Should not already be working.',
   );
 
+  // root指 fiberRootNode
+  // root.finishedWork指当前应用的rootFiber
   const finishedWork = root.finishedWork;
+   // 凡是变量名带lane的都是优先级相关
   const lanes = root.finishedLanes;
 
   if (__DEV__) {
@@ -1824,6 +1833,7 @@ function commitRootImpl(root, renderPriorityLevel) {
 
     return null;
   }
+  // 重置Scheduler绑定的回调函数
   root.finishedWork = null;
   root.finishedLanes = NoLanes;
 
@@ -1840,8 +1850,10 @@ function commitRootImpl(root, renderPriorityLevel) {
   // Update the first and last pending times on this root. The new first
   // pending time is whatever is left on the root fiber.
   let remainingLanes = mergeLanes(finishedWork.lanes, finishedWork.childLanes);
+  // 重置优先级相关变量
   markRootFinished(root, remainingLanes);
 
+  // 清除已完成的discrete updates，例如：用户鼠标点击触发的更新
   // Clear already finished discrete updates in case that a later call of
   // `flushDiscreteUpdates` starts a useless render pass which may cancels
   // a scheduled timeout.
@@ -1854,6 +1866,7 @@ function commitRootImpl(root, renderPriorityLevel) {
     }
   }
 
+  // 重置全局变量
   if (root === workInProgressRoot) {
     // We can reset these now that they are finished.
     workInProgressRoot = null;
@@ -1879,13 +1892,16 @@ function commitRootImpl(root, renderPriorityLevel) {
       (BeforeMutationMask | MutationMask | LayoutMask | PassiveMask)) !==
     NoFlags;
 
+  //------------------------------------------ before mutation阶段 -------------------------------------------
   if (subtreeHasEffects || rootHasEffect) {
+    // 保存之前的优先级，以同步优先级执行，执行完毕后恢复之前的优先级
     let previousLanePriority;
     if (decoupleUpdatePriorityFromScheduler) {
       previousLanePriority = getCurrentUpdateLanePriority();
       setCurrentUpdateLanePriority(SyncLanePriority);
     }
 
+    //  将当前上下文标记为CommitContext，作为commit阶段的标志
     const prevExecutionContext = executionContext;
     executionContext |= CommitContext;
     const prevInteractions = pushInteractions(root);
@@ -1897,12 +1913,15 @@ function commitRootImpl(root, renderPriorityLevel) {
     // of the effect list for each phase: all mutation effects come before all
     // layout effects, and so on.
 
+
+    // 处理focus状态
     // The first phase a "before mutation" phase. We use this phase to read the
     // state of the host tree right before we mutate it. This is where
     // getSnapshotBeforeUpdate is called.
     focusedInstanceHandle = prepareForCommit(root.containerInfo);
     shouldFireAfterActiveInstanceBlur = false;
 
+    // beforeMutation阶段的主函数
     commitBeforeMutationEffects(finishedWork);
 
     // We no longer need to track the active instance fiber
@@ -1914,6 +1933,7 @@ function commitRootImpl(root, renderPriorityLevel) {
       recordCommitTime();
     }
 
+    //------------------------------------------ mutation阶段 -------------------------------------------
     // The next phase is the mutation phase, where we mutate the host tree.
     commitMutationEffects(finishedWork, root, renderPriorityLevel);
 

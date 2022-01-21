@@ -3098,7 +3098,7 @@ function beginWork(
       );
     }
   }
-
+  // current !== null, 为update，非首次渲染，
   if (current !== null) {
     const oldProps = current.memoizedProps;
     const newProps = workInProgress.pendingProps;
@@ -3111,6 +3111,7 @@ function beginWork(
     ) {
       // If props or context changed, mark the fiber as having performed work.
       // This may be unset if the props are determined to be equal later (memo).
+      // 当props 或 context发生变化时，新建子Fiber
       didReceiveUpdate = true;
     } else if (!includesSomeLane(renderLanes, updateLanes)) {
       didReceiveUpdate = false;
@@ -3277,6 +3278,7 @@ function beginWork(
           return updateOffscreenComponent(current, workInProgress, renderLanes);
         }
       }
+      // 当前Fiber节点优先级不够，复用前一次的子Fiber
       return bailoutOnAlreadyFinishedWork(current, workInProgress, renderLanes);
     } else {
       if ((current.flags & ForceUpdateForLegacySuspense) !== NoFlags) {
@@ -3302,6 +3304,7 @@ function beginWork(
   // move this assignment out of the common path and into each branch.
   workInProgress.lanes = NoLanes;
 
+  // mount时：根据tag不同，创建不同的子Fiber节点
   switch (workInProgress.tag) {
     case IndeterminateComponent: {
       return mountIndeterminateComponent(

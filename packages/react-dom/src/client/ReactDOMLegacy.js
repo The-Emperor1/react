@@ -289,6 +289,7 @@ export function render(
   container: Container,
   callback: ?Function,
 ) {
+  // 入口
   invariant(
     isValidContainer(container),
     'Target container is not a DOM element.',

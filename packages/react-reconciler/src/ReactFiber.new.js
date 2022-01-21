@@ -120,16 +120,16 @@ function FiberNode(
   mode: TypeOfMode,
 ) {
   // Instance
-  this.tag = tag;
-  this.key = key;
-  this.elementType = null;
-  this.type = null;
-  this.stateNode = null;
+  this.tag = tag;           // Fiber对应的组件类型 Function/Class/Host
+  this.key = key;           // Key属性
+  this.elementType = null;  // 大部分情况同type，某些情况不同，比如FunctionComponent使用React.memo包裹
+  this.type = null;         // 对于 FunctionComponent，指函数本身，对于ClassComponent，指class，对于HostComponent，指DOM节点tagName
+  this.stateNode = null;    // Fiber对应的真实DOM节点
 
   // Fiber
-  this.return = null;
-  this.child = null;
-  this.sibling = null;
+  this.return = null;       // 指向父级Fiber节点
+  this.child = null;        // 指向子Fiber节点
+  this.sibling = null;      // 指向右边第一个兄弟Fiber节点
   this.index = 0;
 
   this.ref = null;
