@@ -134,6 +134,7 @@ function FiberNode(
 
   this.ref = null;
 
+  // 保存本次更新造成的状态改变相关的信息
   this.pendingProps = pendingProps;
   this.memoizedProps = null;
   this.updateQueue = null;
@@ -147,9 +148,11 @@ function FiberNode(
   this.subtreeFlags = NoFlags;
   this.deletions = null;
 
+  // 调度优先级相关
   this.lanes = NoLanes;
   this.childLanes = NoLanes;
 
+  // 指向该fiber在另一次更新时对应的fiber
   this.alternate = null;
 
   if (enableProfilerTimer) {

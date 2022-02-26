@@ -231,6 +231,8 @@ if (__DEV__) {
   didWarnAboutDefaultPropsOnFunctionComponent = {};
 }
 
+// Reconciler的核心部分，mount时创建新的Fiber子节点
+// update时，Diff算法，生成新的Fiber节点
 export function reconcileChildren(
   current: Fiber | null,
   workInProgress: Fiber,
@@ -759,10 +761,11 @@ function updateFunctionComponent(
     }
     setIsRendering(false);
   } else {
+    // function组件初始化及更新？？？
     nextChildren = renderWithHooks(
-      current,
-      workInProgress,
-      Component,
+      current,         // current Fiber
+      workInProgress,  // workInProgress Fiber
+      Component,       // 函数组件本身
       nextProps,
       context,
       renderLanes,
@@ -897,6 +900,7 @@ function updateClassComponent(
       // Since this is conceptually a new fiber, schedule a Placement effect
       workInProgress.flags |= Placement;
     }
+    // 执行组件构造函数方法
     // In the initial pass we might need to construct the instance.
     constructClassInstance(workInProgress, Component, nextProps);
     mountClassInstance(workInProgress, Component, nextProps, renderLanes);
@@ -3278,7 +3282,7 @@ function beginWork(
           return updateOffscreenComponent(current, workInProgress, renderLanes);
         }
       }
-      // 当前Fiber节点优先级不够，复用前一次的子Fiber
+      // 复用前一次的子Fiber
       return bailoutOnAlreadyFinishedWork(current, workInProgress, renderLanes);
     } else {
       if ((current.flags & ForceUpdateForLegacySuspense) !== NoFlags) {

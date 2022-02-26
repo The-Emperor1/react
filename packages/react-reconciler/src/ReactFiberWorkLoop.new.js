@@ -689,6 +689,7 @@ function ensureRootIsScheduled(root: FiberRoot, currentTime: number) {
   // expired so we know to work on those next.
   markStarvedLanesAsExpired(root, currentTime);
 
+  // 获取当前任务的优先级处理逻辑
   // Determine the next lanes to work on, and their priority.
   const nextLanes = getNextLanes(
     root,
@@ -711,9 +712,11 @@ function ensureRootIsScheduled(root: FiberRoot, currentTime: number) {
   if (existingCallbackNode !== null) {
     const existingCallbackPriority = root.callbackPriority;
     if (existingCallbackPriority === newCallbackPriority) {
+      // 任务优先级一致，复用之前的任务进行更新
       // The priority hasn't changed. We can reuse the existing task. Exit.
       return;
     }
+    // 当前优先级更高，发起新的调度任务
     // The priority changed. Cancel the existing callback. We'll schedule a new
     // one below.
     cancelCallback(existingCallbackNode);
@@ -1672,6 +1675,7 @@ function performUnitOfWork(unitOfWork: Fiber): void {
   resetCurrentDebugFiberInDEV();
   unitOfWork.memoizedProps = unitOfWork.pendingProps;
   if (next === null) {
+    // completeWork, "归"阶段
     // If this doesn't spawn new work, complete the current work.
     completeUnitOfWork(unitOfWork);
   } else {
@@ -1776,6 +1780,7 @@ function completeUnitOfWork(unitOfWork: Fiber): void {
   }
 }
 
+// comment阶段执行的函数
 function commitRoot(root) {
   const renderPriorityLevel = getCurrentPriorityLevel();
   runWithPriority(
@@ -1937,6 +1942,7 @@ function commitRootImpl(root, renderPriorityLevel) {
     // The next phase is the mutation phase, where we mutate the host tree.
     commitMutationEffects(finishedWork, root, renderPriorityLevel);
 
+    //处理DOM节点渲染/删除后的 autoFocus、blur逻辑
     if (shouldFireAfterActiveInstanceBlur) {
       afterActiveInstanceBlur();
     }
@@ -1948,6 +1954,7 @@ function commitRootImpl(root, renderPriorityLevel) {
     // work is current during componentDidMount/Update.
     root.current = finishedWork;
 
+    //------------------------------------------- layout阶段 --------------------------------------------
     // The next phase is the layout phase, where we call effects that read
     // the host tree after it's been mutated. The idiomatic use case for this is
     // layout, but class component lifecycles also fire here for legacy reasons.
@@ -1997,9 +2004,11 @@ function commitRootImpl(root, renderPriorityLevel) {
       (finishedWork.subtreeFlags & PassiveMask) !== NoFlags ||
       (finishedWork.flags & PassiveMask) !== NoFlags
     ) {
+      // 调度useEffect
       if (!rootDoesHavePassiveEffects) {
         rootDoesHavePassiveEffects = true;
         scheduleCallback(NormalSchedulerPriority, () => {
+          // 触发useEffect
           flushPassiveEffects();
           return null;
         });
@@ -2286,11 +2295,13 @@ function commitMutationEffectsImpl(
   root: FiberRoot,
   renderPriorityLevel,
 ) {
+  // 根据 ContentReset effectTag重置文字节点
   const flags = fiber.flags;
   if (flags & ContentReset) {
     commitResetTextContent(fiber);
   }
 
+  // 更新ref
   if (flags & Ref) {
     const current = fiber.alternate;
     if (current !== null) {
@@ -2304,6 +2315,7 @@ function commitMutationEffectsImpl(
     }
   }
 
+  // 根据 effectTag 分别处理
   // The following switch statement is only concerned about placement,
   // updates, and deletions. To avoid needing to add a case for every possible
   // bitmap value, we remove the secondary effects from the effect tag and

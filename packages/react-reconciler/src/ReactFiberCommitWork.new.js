@@ -594,12 +594,14 @@ function recursivelyCommitLayoutEffects(
                 recordLayoutEffectDuration(finishedWork);
               }
             } else {
+              // 执行useLayoutEffect的回调函数
               commitHookEffectListMount(
                 HookLayout | HookHasEffect,
                 finishedWork,
               );
             }
 
+            // 调度useEffect的销毁函数与回调函数
             if ((finishedWork.subtreeFlags & PassiveMask) !== NoFlags) {
               schedulePassiveEffectCallback();
             }
@@ -1301,6 +1303,7 @@ function commitPlacement(finishedWork: Fiber): void {
   // Note: these two variables *must* always be updated together.
   let parent;
   let isContainer;
+  // 获取父级DOM节点
   const parentStateNode = parentFiber.stateNode;
   switch (parentFiber.tag) {
     case HostComponent:
@@ -1335,7 +1338,9 @@ function commitPlacement(finishedWork: Fiber): void {
     parentFiber.flags &= ~ContentReset;
   }
 
+  // 获取兄弟DOM节点
   const before = getHostSibling(finishedWork);
+  // 根据DOM兄弟节点是否存在决定调用parentNode.insertBefore或parentNode.appendChild执行DOM插入操作
   // We only have the top Fiber that was inserted but we need to recurse down its
   // children to find all the terminal nodes.
   if (isContainer) {
@@ -1622,6 +1627,7 @@ function commitWork(current: Fiber | null, finishedWork: Fiber): void {
         ) {
           try {
             startLayoutEffectTimer();
+            // 执行所有useLayoutEffect hook的销毁函数。
             commitHookEffectListUnmount(
               HookLayout | HookHasEffect,
               finishedWork,

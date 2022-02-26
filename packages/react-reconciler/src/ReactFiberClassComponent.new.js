@@ -207,7 +207,9 @@ const classComponentUpdater = {
       update.callback = callback;
     }
 
+    // 将更新推入队列
     enqueueUpdate(fiber, update);
+    // 进入异步渲染的核心：React Scheduler
     scheduleUpdateOnFiber(fiber, lane, eventTime);
 
     if (__DEV__) {
@@ -562,6 +564,7 @@ function checkClassInstance(workInProgress: Fiber, ctor: any, newProps: any) {
 }
 
 function adoptClassInstance(workInProgress: Fiber, instance: any): void {
+  // 挂载updater，提供更新能力
   instance.updater = classComponentUpdater;
   workInProgress.stateNode = instance;
   // The instance needs access to the fiber so that it can schedule updates
@@ -649,12 +652,14 @@ function constructClassInstance(
       }
     }
   }
-
+  
+  // 执行构造函数，创建实例
   const instance = new ctor(props, context);
   const state = (workInProgress.memoizedState =
     instance.state !== null && instance.state !== undefined
       ? instance.state
       : null);
+  // 注入更新逻辑
   adoptClassInstance(workInProgress, instance);
 
   if (__DEV__) {
