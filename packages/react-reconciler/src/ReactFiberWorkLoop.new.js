@@ -1780,7 +1780,7 @@ function completeUnitOfWork(unitOfWork: Fiber): void {
   }
 }
 
-// comment阶段执行的函数
+// comment阶段入口
 function commitRoot(root) {
   const renderPriorityLevel = getCurrentPriorityLevel();
   runWithPriority(
@@ -1812,7 +1812,7 @@ function commitRootImpl(root, renderPriorityLevel) {
   // root指 fiberRootNode
   // root.finishedWork指当前应用的rootFiber
   const finishedWork = root.finishedWork;
-   // 凡是变量名带lane的都是优先级相关
+  // 凡是变量名带lane的都是优先级相关
   const lanes = root.finishedLanes;
 
   if (__DEV__) {
@@ -1917,7 +1917,6 @@ function commitRootImpl(root, renderPriorityLevel) {
     // The commit phase is broken into several sub-phases. We do a separate pass
     // of the effect list for each phase: all mutation effects come before all
     // layout effects, and so on.
-
 
     // 处理focus状态
     // The first phase a "before mutation" phase. We use this phase to read the
@@ -2039,8 +2038,10 @@ function commitRootImpl(root, renderPriorityLevel) {
     }
   }
 
+  //------------------------------------------ layout 之后 -------------------------------------------
   const rootDidHavePassiveEffects = rootDoesHavePassiveEffects;
 
+  // useEffect相关
   if (rootDoesHavePassiveEffects) {
     // This commit has passive effects. Stash a reference to them. But don't
     // schedule a callback until after flushing layout work.
@@ -2053,6 +2054,7 @@ function commitRootImpl(root, renderPriorityLevel) {
   // Read this again, since an effect might have updated it
   remainingLanes = root.pendingLanes;
 
+  // 性能优化相关
   // Check if there's remaining work on this root
   if (remainingLanes !== NoLanes) {
     if (enableSchedulerTracing) {
@@ -2081,6 +2083,7 @@ function commitRootImpl(root, renderPriorityLevel) {
     }
   }
 
+  // 性能优化相关
   if (enableSchedulerTracing) {
     if (!rootDidHavePassiveEffects) {
       // If there are no passive effects, then we can complete the pending interactions.
@@ -2091,6 +2094,7 @@ function commitRootImpl(root, renderPriorityLevel) {
     }
   }
 
+  // ...检测无限循环的同步任务
   if (remainingLanes === SyncLane) {
     // Count the number of times the root synchronously re-renders without
     // finishing. If there are too many, it indicates an infinite update loop.
@@ -2110,6 +2114,7 @@ function commitRootImpl(root, renderPriorityLevel) {
     onCommitRootTestSelector();
   }
 
+  // 在离开commitRoot函数前调用，触发一次新的调度，确保任何附加的任务被调度
   // Always call this before exiting `commitRoot`, to ensure that any
   // additional work on this root is scheduled.
   ensureRootIsScheduled(root, now());
@@ -2139,6 +2144,9 @@ function commitRootImpl(root, renderPriorityLevel) {
     return null;
   }
 
+  // 执行同步任务，这样同步任务不需要等到下次事件循环再执行
+  // 比如在 componentDidMount 中执行 setState 创建的更新会在这里被同步执行
+  // 或useLayoutEffect
   // If layout work was scheduled, flush it now.
   flushSyncCallbackQueue();
 
@@ -2159,9 +2167,11 @@ function commitBeforeMutationEffects(firstChild: Fiber) {
   let fiber = firstChild;
   while (fiber !== null) {
     if (fiber.deletions !== null) {
+      // ...focus blur相关
       commitBeforeMutationEffectsDeletions(fiber.deletions);
     }
 
+    // 调用getSnapshotBeforeUpdate
     if (fiber.child !== null) {
       const primarySubtreeFlags = fiber.subtreeFlags & BeforeMutationMask;
       if (primarySubtreeFlags !== NoFlags) {
@@ -2211,12 +2221,14 @@ function commitBeforeMutationEffectsImpl(fiber: Fiber) {
     resetCurrentDebugFiberInDEV();
   }
 
+  // 调度useEffect
   if ((flags & Passive) !== NoFlags) {
     // If there are passive effects, schedule a callback to flush at
     // the earliest opportunity.
     if (!rootDoesHavePassiveEffects) {
       rootDoesHavePassiveEffects = true;
       scheduleCallback(NormalSchedulerPriority, () => {
+        // 触发useEffect
         flushPassiveEffects();
         return null;
       });
@@ -2249,6 +2261,7 @@ function commitMutationEffects(
   while (fiber !== null) {
     const deletions = fiber.deletions;
     if (deletions !== null) {
+      // 删除DOM
       commitMutationEffectsDeletions(
         deletions,
         fiber,
@@ -2322,6 +2335,7 @@ function commitMutationEffectsImpl(
   // switch on that value.
   const primaryFlags = flags & (Placement | Update | Hydrating);
   switch (primaryFlags) {
+    // 插入DOM
     case Placement: {
       commitPlacement(fiber);
       // Clear the "placement" from effect tag so that we know that this is
@@ -2331,6 +2345,7 @@ function commitMutationEffectsImpl(
       fiber.flags &= ~Placement;
       break;
     }
+    // 插入DOM 并 更新DOM
     case PlacementAndUpdate: {
       // Placement
       commitPlacement(fiber);
@@ -2343,10 +2358,12 @@ function commitMutationEffectsImpl(
       commitWork(current, fiber);
       break;
     }
+    // SSR
     case Hydrating: {
       fiber.flags &= ~Hydrating;
       break;
     }
+    // SSR
     case HydratingAndUpdate: {
       fiber.flags &= ~Hydrating;
 
@@ -2355,6 +2372,7 @@ function commitMutationEffectsImpl(
       commitWork(current, fiber);
       break;
     }
+    // 更新DOM
     case Update: {
       const current = fiber.alternate;
       commitWork(current, fiber);

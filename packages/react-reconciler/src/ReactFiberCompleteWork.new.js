@@ -272,6 +272,7 @@ if (supportsMutation) {
       rootContainerInstance,
       currentHostContext,
     );
+    // updatePayload为数组形式，他的偶数索引的值为变化的prop key，奇数索引的值为变化的prop value
     // TODO: Type this specific to this type of component.
     workInProgress.updateQueue = (updatePayload: any);
     // If the update payload indicates that there is a change or if there
@@ -858,6 +859,7 @@ function completeWork(
       const rootContainerInstance = getRootHostContainer();
       const type = workInProgress.type;
       if (current !== null && workInProgress.stateNode != null) {
+        // Update 阶段, 更新 Fiber
         updateHostComponent(
           current,
           workInProgress,

@@ -763,9 +763,9 @@ function updateFunctionComponent(
   } else {
     // function组件初始化及更新？？？
     nextChildren = renderWithHooks(
-      current,         // current Fiber
-      workInProgress,  // workInProgress Fiber
-      Component,       // 函数组件本身
+      current, // current Fiber
+      workInProgress, // workInProgress Fiber
+      Component, // 函数组件本身
       nextProps,
       context,
       renderLanes,
