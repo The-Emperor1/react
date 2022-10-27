@@ -815,6 +815,7 @@ function ChildReconciler(shouldTrackSideEffects) {
         newChildren[newIdx],
         lanes,
       );
+      // key不同导致不可复用，立即跳出整个遍历，第一轮遍历结束
       if (newFiber === null) {
         // TODO: This breaks on empty slots like null children. That's
         // unfortunate because it triggers the slow path all the time. We need
@@ -825,6 +826,7 @@ function ChildReconciler(shouldTrackSideEffects) {
         }
         break;
       }
+      // 	key相同但type不同导致不可复用，将oldFiber标记为DELETION，并继续遍历
       if (shouldTrackSideEffects) {
         if (oldFiber && newFiber.alternate === null) {
           // We matched the slot, but we didn't reuse the existing fiber, so we
@@ -846,13 +848,14 @@ function ChildReconciler(shouldTrackSideEffects) {
       previousNewFiber = newFiber;
       oldFiber = nextOldFiber;
     }
-
+    // 若newChildren遍历完， 但oldFiber未遍历完，则将剩下的oldFiber标记为DELETION
     if (newIdx === newChildren.length) {
       // We've reached the end of the new children. We can delete the rest.
       deleteRemainingChildren(returnFiber, oldFiber);
       return resultingFirstChild;
     }
 
+    // 若oldFiber遍历完， 但newChildren未遍历完，新建fiber并标记为插入
     if (oldFiber === null) {
       // If we don't have any more existing children we can choose a fast path
       // since the rest will all be insertions.
@@ -1133,10 +1136,14 @@ function ChildReconciler(shouldTrackSideEffects) {
   ): Fiber {
     const key = element.key;
     let child = currentFirstChild;
+    // 首先判断是否存在对应DOM节点
     while (child !== null) {
+      // 上一次更新存在DOM节点，接下来判断是否可复用
       // TODO: If key === null and child.key === null, then this only applies to
       // the first item in the list.
+      // 首先比较key是否相同
       if (child.key === key) {
+        // key相同，接下来比较type是否相同
         switch (child.tag) {
           case Fragment: {
             if (element.type === REACT_FRAGMENT_TYPE) {
@@ -1179,6 +1186,8 @@ function ChildReconciler(shouldTrackSideEffects) {
           // We intentionally fallthrough here if enableBlocksAPI is not on.
           // eslint-disable-next-lined no-fallthrough
           default: {
+            // type相同则表示可以复用
+            // 返回复用的fiber
             if (
               child.elementType === element.type ||
               // Keep this check inline so it only runs on the false path:
@@ -1196,13 +1205,17 @@ function ChildReconciler(shouldTrackSideEffects) {
               }
               return existing;
             }
+            // type不同则跳出switch
             break;
           }
         }
+        // 代码执行到这里代表：key相同但是type不同
+        // 将该fiber及其兄弟fiber标记为删除
         // Didn't match.
         deleteRemainingChildren(returnFiber, child);
         break;
       } else {
+        // key不同，将该fiber标记为删除
         deleteChild(returnFiber, child);
       }
       child = child.sibling;
@@ -1261,6 +1274,7 @@ function ChildReconciler(shouldTrackSideEffects) {
     return created;
   }
 
+  // 根据newChild类型选择不同diff函数处理
   // This API will tag the children with the side-effect of the reconciliation
   // itself. They will be added to the side-effect list as we pass through the
   // children and the parent.
@@ -1291,6 +1305,7 @@ function ChildReconciler(shouldTrackSideEffects) {
     const isObject = typeof newChild === 'object' && newChild !== null;
 
     if (isObject) {
+      // 对象类型，可能是 REACT_ELEMENT_TYPE 或 REACT_PORTAL_TYPE
       switch (newChild.$$typeof) {
         case REACT_ELEMENT_TYPE:
           return placeSingleChild(

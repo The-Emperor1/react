@@ -121,11 +121,11 @@ type SharedQueue<State> = {|
 |};
 
 export type UpdateQueue<State> = {|
-  baseState: State,
-  firstBaseUpdate: Update<State> | null,
+  baseState: State, // 本次更新前该Fiber节点的state，Update基于该state计算更新后的state
+  firstBaseUpdate: Update<State> | null, // 本次更新前该Fiber节点已保存的Update。以链表形式存在，链表头为firstBaseUpdate，链表尾为lastBaseUpdate
   lastBaseUpdate: Update<State> | null,
-  shared: SharedQueue<State>,
-  effects: Array<Update<State>> | null,
+  shared: SharedQueue<State>, // 触发更新时，产生的Update会保存在shared.pending中形成单向环状链表。
+  effects: Array<Update<State>> | null, // 数组。保存update.callback !== null的Update。
 |};
 
 export const UpdateState = 0;
@@ -183,14 +183,14 @@ export function cloneUpdateQueue<State>(
 
 export function createUpdate(eventTime: number, lane: Lane): Update<*> {
   const update: Update<*> = {
-    eventTime,
-    lane,
+    eventTime, // 任务时间，通过performance.now()获取的毫秒数。由于该字段在未来会重构，当前我们不需要理解他。
+    lane, // 优先级相关字段。当前还不需要掌握他，只需要知道不同Update优先级可能是不同的。
 
-    tag: UpdateState,
-    payload: null,
-    callback: null,
+    tag: UpdateState, // 更新的类型，包括UpdateState | ReplaceState | ForceUpdate | CaptureUpdate。
+    payload: null, // 更新挂载的数据，不同类型组件挂载的数据不同。对于ClassComponent，payload为this.setState的第一个传参。对于HostRoot，payload为ReactDOM.render的第一个传参。
+    callback: null, // 更新的回调函数。
 
-    next: null,
+    next: null, // 与其他Update连接形成链表。
   };
   return update;
 }

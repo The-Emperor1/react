@@ -194,12 +194,16 @@ export function applyDerivedStateFromProps(
 const classComponentUpdater = {
   isMounted,
   enqueueSetState(inst, payload, callback) {
+    // 通过组件实例获取对应fiber
     const fiber = getInstance(inst);
     const eventTime = requestEventTime();
+    // 获取优先级
     const lane = requestUpdateLane(fiber);
 
+    // 创建update
     const update = createUpdate(eventTime, lane);
     update.payload = payload;
+    // 赋值回调函数
     if (callback !== undefined && callback !== null) {
       if (__DEV__) {
         warnOnInvalidCallback(callback, 'setState');
@@ -263,6 +267,7 @@ const classComponentUpdater = {
     const lane = requestUpdateLane(fiber);
 
     const update = createUpdate(eventTime, lane);
+    // 赋值tag为ForceUpdate
     update.tag = ForceUpdate;
 
     if (callback !== undefined && callback !== null) {
@@ -652,7 +657,7 @@ function constructClassInstance(
       }
     }
   }
-  
+
   // 执行构造函数，创建实例
   const instance = new ctor(props, context);
   const state = (workInProgress.memoizedState =

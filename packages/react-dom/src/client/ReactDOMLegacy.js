@@ -194,6 +194,8 @@ function legacyRenderSubtreeIntoContainer(
       container,
       forceHydrate,
     );
+    // fiberRoot(FiberRootNode)，整个应用的根节点
+    // rootFiber(FiberNode)，组件树的根节点（fiberRoot.current->rootFiber）
     fiberRoot = root._internalRoot;
     if (typeof callback === 'function') {
       const originalCallback = callback;
@@ -284,12 +286,12 @@ export function hydrate(
   );
 }
 
+// 程序入口
 export function render(
   element: React$Element<any>,
   container: Container,
   callback: ?Function,
 ) {
-  // 入口
   invariant(
     isValidContainer(container),
     'Target container is not a DOM element.',
@@ -309,7 +311,7 @@ export function render(
   return legacyRenderSubtreeIntoContainer(
     null,
     element,
-    container,
+    container, // container指ReactDOM.render的第二个参数（即应用挂载的DOM节点）
     false,
     callback,
   );
