@@ -256,7 +256,7 @@ export function updateContainer(
   if (__DEV__) {
     onScheduleRoot(container, element);
   }
-  const current = container.current;
+  const current = container.current; // fiberRoot.current->rootFiber
   const eventTime = requestEventTime();
   if (__DEV__) {
     // $FlowExpectedError - jest isn't a global, and isn't recognized outside of tests
@@ -295,6 +295,7 @@ export function updateContainer(
     }
   }
 
+  // setState/ReactDOM.render 造成的 React 更新都会创建一个update
   const update = createUpdate(eventTime, lane);
   // Caution: React DevTools currently depends on this property
   // being called "element".
@@ -314,6 +315,7 @@ export function updateContainer(
     update.callback = callback;
   }
 
+  // 将更新推入队列，开始调度
   enqueueUpdate(current, update);
   scheduleUpdateOnFiber(current, lane, eventTime);
 

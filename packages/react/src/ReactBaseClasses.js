@@ -18,16 +18,16 @@ if (__DEV__) {
  * Base class helpers for the updating state of a component.
  */
 function Component(props, context, updater) {
-  this.props = props;
-  this.context = context;
+  this.props = props; // props 属性
+  this.context = context; // 当前的context
   // If a component has string refs, we will assign a different object later.
-  this.refs = emptyObject;
+  this.refs = emptyObject; // ref挂载的对象
   // We initialize the default updater but the real one gets injected by the
   // renderer.
-  this.updater = updater || ReactNoopUpdateQueue;
+  this.updater = updater || ReactNoopUpdateQueue; // 更新对象
 }
 
-Component.prototype.isReactComponent = {};
+Component.prototype.isReactComponent = {}; // 表示是class组件
 
 /**
  * Sets a subset of the state. Always use this to mutate

@@ -234,6 +234,7 @@ const classComponentUpdater = {
     const eventTime = requestEventTime();
     const lane = requestUpdateLane(fiber);
 
+    // setState/ReactDOM.render 造成的 React 更新都会创建一个update
     const update = createUpdate(eventTime, lane);
     update.tag = ReplaceState;
     update.payload = payload;
@@ -245,6 +246,7 @@ const classComponentUpdater = {
       update.callback = callback;
     }
 
+    // 将更新推入队列，开始调度
     enqueueUpdate(fiber, update);
     scheduleUpdateOnFiber(fiber, lane, eventTime);
 
@@ -266,6 +268,7 @@ const classComponentUpdater = {
     const eventTime = requestEventTime();
     const lane = requestUpdateLane(fiber);
 
+    // setState/ReactDOM.render 造成的 React 更新都会创建一个update
     const update = createUpdate(eventTime, lane);
     // 赋值tag为ForceUpdate
     update.tag = ForceUpdate;
@@ -277,6 +280,7 @@ const classComponentUpdater = {
       update.callback = callback;
     }
 
+    // 将更新推入队列，开始调度
     enqueueUpdate(fiber, update);
     scheduleUpdateOnFiber(fiber, lane, eventTime);
 
@@ -339,6 +343,8 @@ function checkShouldComponentUpdate(
     return shouldUpdate;
   }
 
+  // 这是检查组件是否需要更新的一个判断，ctor就是你声明的继承自Component or PureComponent的类，
+  // 他会判断你是否继承自PureComponent，如果是的话就shallowEqual比较state和props。
   if (ctor.prototype && ctor.prototype.isPureReactComponent) {
     return (
       !shallowEqual(oldProps, newProps) || !shallowEqual(oldState, newState)

@@ -80,6 +80,7 @@ function FiberRootNode(containerInfo, tag, hydrate) {
   }
 }
 
+// 程序入口（concurrent模式）
 export function createFiberRoot(
   containerInfo: any,
   tag: RootTag,

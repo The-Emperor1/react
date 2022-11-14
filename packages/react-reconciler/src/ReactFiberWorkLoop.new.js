@@ -585,8 +585,9 @@ export function scheduleUpdateOnFiber(
       // This is a legacy edge case. The initial mount of a ReactDOM.render-ed
       // root inside of batchedUpdates should be synchronous, but layout updates
       // should be deferred until the end of the batch.
-      performSyncWorkOnRoot(root);
+      performSyncWorkOnRoot(root); // 同步
     } else {
+      // 调度节点
       ensureRootIsScheduled(root, eventTime);
       schedulePendingInteractions(root, lane);
       if (executionContext === NoContext) {
@@ -729,12 +730,12 @@ function ensureRootIsScheduled(root: FiberRoot, currentTime: number) {
     // Special case: Sync React callbacks are scheduled on a special
     // internal queue
     newCallbackNode = scheduleSyncCallback(
-      performSyncWorkOnRoot.bind(null, root), // render阶段的入口函数
+      performSyncWorkOnRoot.bind(null, root), // render 阶段入口
     );
   } else if (newCallbackPriority === SyncBatchedLanePriority) {
     newCallbackNode = scheduleCallback(
       ImmediateSchedulerPriority,
-      performSyncWorkOnRoot.bind(null, root),
+      performSyncWorkOnRoot.bind(null, root), // render 阶段入口
     );
   } else {
     // / 根据任务优先级异步执行render阶段
@@ -743,7 +744,7 @@ function ensureRootIsScheduled(root: FiberRoot, currentTime: number) {
     );
     newCallbackNode = scheduleCallback(
       schedulerPriorityLevel,
-      performConcurrentWorkOnRoot.bind(null, root), // render阶段的入口函数
+      performConcurrentWorkOnRoot.bind(null, root), // render 阶段入口
     );
   }
 
@@ -866,7 +867,7 @@ function finishConcurrentRender(root, exitStatus, lanes) {
     case RootErrored: {
       // We should have already attempted to retry this tree. If we reached
       // this point, it errored again. Commit it.
-      commitRoot(root);
+      commitRoot(root); // commit 阶段入口
       break;
     }
     case RootSuspended: {
@@ -1051,7 +1052,7 @@ function performSyncWorkOnRoot(root) {
   const finishedWork: Fiber = (root.current.alternate: any);
   root.finishedWork = finishedWork;
   root.finishedLanes = lanes;
-  commitRoot(root);
+  commitRoot(root); // commit 阶段入口
 
   // Before exiting, make sure there's a callback scheduled for the next
   // pending level.
@@ -1782,7 +1783,6 @@ function completeUnitOfWork(unitOfWork: Fiber): void {
   }
 }
 
-// comment阶段入口
 function commitRoot(root) {
   const renderPriorityLevel = getCurrentPriorityLevel();
   runWithPriority(
@@ -1928,6 +1928,7 @@ function commitRootImpl(root, renderPriorityLevel) {
     shouldFireAfterActiveInstanceBlur = false;
 
     // beforeMutation阶段的主函数
+    // 1.执行getSnapshotBeforeUpdate；2.调度useEffect
     commitBeforeMutationEffects(finishedWork);
 
     // We no longer need to track the active instance fiber
@@ -1941,6 +1942,7 @@ function commitRootImpl(root, renderPriorityLevel) {
 
     //------------------------------------------ mutation阶段 -------------------------------------------
     // The next phase is the mutation phase, where we mutate the host tree.
+    // 1.调用commitDetachRef解绑ref；2.根据effectTag执行对应的DOM操作；3.useLayoutEffect销毁函数在UpdateTag时执行
     commitMutationEffects(finishedWork, root, renderPriorityLevel);
 
     //处理DOM节点渲染/删除后的 autoFocus、blur逻辑
@@ -1985,6 +1987,9 @@ function commitRootImpl(root, renderPriorityLevel) {
       resetCurrentDebugFiberInDEV();
     } else {
       try {
+        // 1.调用commitLayoutEffectOnFiber执行相关生命周期函数或者hook相关的callback；
+        // 2.执行commitAttachRef为ref赋值；
+        // 3.current Fiber树切换为workInProgress Fiber树
         recursivelyCommitLayoutEffects(finishedWork, root);
       } catch (error) {
         captureCommitPhaseErrorOnRoot(finishedWork, finishedWork, error);
